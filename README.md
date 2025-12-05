@@ -57,7 +57,8 @@
 - [环境变量](#环境变量)
 - [弹幕后端部署](#弹幕后端部署)
 - [超分功能说明](#超分功能说明)
-- [AndroidTV 使用](#AndroidTV-使用)
+- [AndroidTV 使用](#androidtv-使用)
+- [TVBOX 订阅功能](#tvbox-订阅功能)
 - [安全与隐私提醒](#安全与隐私提醒)
 - [License](#license)
 - [致谢](#致谢)
@@ -226,7 +227,7 @@ dockge/komodo 等 docker compose UI 也有自动更新功能
 | ----------------------------------- | -------------------------------------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | USERNAME                            | 站长账号           | 任意字符串                       | 无默认，必填字段                                                                                                                     |
 | PASSWORD                            | 站长密码           | 任意字符串                       | 无默认，必填字段                                                                                                                     |
-| SITE_BASE                           | 站点 url              |       形如 https://example.com                  | 空                                                                                                                     |
+| SITE_BASE                           | 站点 url                                                     |       形如 https://example.com                  | 空                                                                                                                     |
 | NEXT_PUBLIC_SITE_NAME               | 站点名称                                     | 任意字符串                       | MoonTV                                                                                                                     |
 | ANNOUNCEMENT                        | 站点公告                                     | 任意字符串                       | 本网站仅提供影视信息搜索服务，所有内容均来自第三方网站。本站不存储任何视频资源，不对任何内容的准确性、合法性、完整性负责。 |
 | NEXT_PUBLIC_STORAGE_TYPE            | 播放记录/收藏的存储方式                      | redis、kvrocks、upstash | 无默认，必填字段                                                                                                               |
@@ -243,6 +244,8 @@ dockge/komodo 等 docker compose UI 也有自动更新功能
 | NEXT_PUBLIC_FLUID_SEARCH | 是否开启搜索接口流式输出 | true/ false | true |
 | NEXT_PUBLIC_PROXY_M3U8_TOKEN | M3U8 代理 API 鉴权 Token（外部播放器跳转时的鉴权token，不填为无鉴权） | 任意字符串 | (空) |
 | NEXT_PUBLIC_DANMAKU_CACHE_EXPIRE_MINUTES | 弹幕缓存失效时间（分钟数，设为 0 时不缓存） | 0 或正整数 | 4320（3天） |
+| ENABLE_TVBOX_SUBSCRIBE | 是否启用 TVBOX 订阅功能 | true/false | false |
+| TVBOX_SUBSCRIBE_TOKEN | TVBOX 订阅 API 访问 Token，如启用TVBOX功能必须设置该项 | 任意字符串 | (空) |
 
 NEXT_PUBLIC_DOUBAN_PROXY_TYPE 选项解释：
 
@@ -287,6 +290,24 @@ NEXT_PUBLIC_DOUBAN_IMAGE_PROXY_TYPE 选项解释：
 目前该项目可以配合 [OrionTV](https://github.com/zimplexing/OrionTV) 在 Android TV 上使用，可以直接作为 OrionTV 后端
 
 已实现播放记录和网页端同步
+
+## TVBOX 订阅功能
+
+本项目支持生成 TVBOX 格式的订阅链接，方便在 TVBOX 应用中使用。
+
+### 配置步骤
+
+1. 在环境变量中设置以下配置：
+   ```env
+   # 启用 TVBOX 订阅功能
+   ENABLE_TVBOX_SUBSCRIBE=true
+   # 设置订阅访问 Token（请使用强密码）
+   TVBOX_SUBSCRIBE_TOKEN=your_secure_random_token
+   ```
+   
+2. 重启应用后，登录网站，点击用户菜单中的"订阅"按钮
+
+3. 复制生成的订阅链接到 TVBOX 应用中使用
 
 ## 安全与隐私提醒
 

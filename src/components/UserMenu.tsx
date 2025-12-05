@@ -5,9 +5,11 @@
 import {
   Check,
   ChevronDown,
+  Copy,
   ExternalLink,
   KeyRound,
   LogOut,
+  Rss,
   Settings,
   Shield,
   User,
@@ -36,14 +38,21 @@ export const UserMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isSubscribeOpen, setIsSubscribeOpen] = useState(false);
   const [isVersionPanelOpen, setIsVersionPanelOpen] = useState(false);
   const [authInfo, setAuthInfo] = useState<AuthInfo | null>(null);
   const [storageType, setStorageType] = useState<string>('localstorage');
   const [mounted, setMounted] = useState(false);
 
+  // 订阅相关状态
+  const [subscribeEnabled, setSubscribeEnabled] = useState(false);
+  const [subscribeUrl, setSubscribeUrl] = useState('');
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [adFilterEnabled, setAdFilterEnabled] = useState(true); // 去广告开关，默认开启
+
   // Body 滚动锁定 - 使用 overflow 方式避免布局问题
   useEffect(() => {
-    if (isSettingsOpen || isChangePasswordOpen) {
+    if (isSettingsOpen || isChangePasswordOpen || isSubscribeOpen) {
       const body = document.body;
       const html = document.documentElement;
 
@@ -62,7 +71,7 @@ export const UserMenu: React.FC = () => {
         html.style.overflow = originalHtmlOverflow;
       };
     }
-  }, [isSettingsOpen, isChangePasswordOpen]);
+  }, [isSettingsOpen, isChangePasswordOpen, isSubscribeOpen]);
 
   // 设置相关状态
   const [defaultAggregateSearch, setDefaultAggregateSearch] = useState(true);
@@ -116,6 +125,28 @@ export const UserMenu: React.FC = () => {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 获取订阅配置
+  useEffect(() => {
+    const fetchSubscribeConfig = async () => {
+      try {
+        // 获取当前浏览器地址
+        const currentOrigin = window.location.origin;
+        const response = await fetch(`/api/tvbox/config?origin=${encodeURIComponent(currentOrigin)}&adFilter=${adFilterEnabled}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSubscribeEnabled(data.enabled);
+          setSubscribeUrl(data.url);
+        }
+      } catch (error) {
+        console.error('获取订阅配置失败:', error);
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      fetchSubscribeConfig();
+    }
+  }, [adFilterEnabled]); // 依赖 adFilterEnabled，当开关改变时重新获取
 
   // 获取认证信息和存储类型
   useEffect(() => {
@@ -273,6 +304,29 @@ export const UserMenu: React.FC = () => {
     setNewPassword('');
     setConfirmPassword('');
     setPasswordError('');
+  };
+
+  const handleSubscribe = () => {
+    setIsOpen(false);
+    setIsSubscribeOpen(true);
+    setCopySuccess(false);
+  };
+
+  const handleCloseSubscribe = () => {
+    setIsSubscribeOpen(false);
+    setCopySuccess(false);
+  };
+
+  const handleCopySubscribeUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(subscribeUrl);
+      setCopySuccess(true);
+      setTimeout(() => {
+        setCopySuccess(false);
+      }, 2000);
+    } catch (error) {
+      console.error('复制失败:', error);
+    }
   };
 
   const handleSubmitChangePassword = async () => {
@@ -557,6 +611,17 @@ export const UserMenu: React.FC = () => {
             >
               <KeyRound className='w-4 h-4 text-gray-500 dark:text-gray-400' />
               <span className='font-medium'>修改密码</span>
+            </button>
+          )}
+
+          {/* 订阅按钮 */}
+          {subscribeEnabled && (
+            <button
+              onClick={handleSubscribe}
+              className='w-full px-3 py-2 text-left flex items-center gap-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm'
+            >
+              <Rss className='w-4 h-4 text-gray-500 dark:text-gray-400' />
+              <span className='font-medium'>订阅</span>
             </button>
           )}
 
@@ -1026,6 +1091,113 @@ export const UserMenu: React.FC = () => {
     </>
   );
 
+  // 订阅面板内容
+  const subscribePanel = (
+    <>
+      {/* 背景遮罩 */}
+      <div
+        className='fixed inset-0 bg-black/50 backdrop-blur-sm z-[1000]'
+        onClick={handleCloseSubscribe}
+        onTouchMove={(e) => {
+          e.preventDefault();
+        }}
+        onWheel={(e) => {
+          e.preventDefault();
+        }}
+        style={{
+          touchAction: 'none',
+        }}
+      />
+
+      {/* 订阅面板 */}
+      <div
+        className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-gray-900 rounded-xl shadow-xl z-[1001] overflow-hidden'
+      >
+        <div
+          className='h-full p-6'
+          data-panel-content
+          onTouchMove={(e) => {
+            e.stopPropagation();
+          }}
+          style={{
+            touchAction: 'auto',
+          }}
+        >
+          {/* 标题栏 */}
+          <div className='flex items-center justify-between mb-6'>
+            <h3 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
+              订阅
+            </h3>
+            <button
+              onClick={handleCloseSubscribe}
+              className='w-8 h-8 p-1 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors'
+              aria-label='Close'
+            >
+              <X className='w-full h-full' />
+            </button>
+          </div>
+
+          {/* 内容 */}
+          <div className='space-y-4'>
+            {/* 去广告开关 */}
+            <div className='flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg'>
+              <div>
+                <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                  去广告
+                </h4>
+                <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                  开启后自动过滤视频广告
+                </p>
+              </div>
+              <label className='flex items-center cursor-pointer'>
+                <div className='relative'>
+                  <input
+                    type='checkbox'
+                    className='sr-only peer'
+                    checked={adFilterEnabled}
+                    onChange={(e) => setAdFilterEnabled(e.target.checked)}
+                  />
+                  <div className='w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-green-500 transition-colors dark:bg-gray-600'></div>
+                  <div className='absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5'></div>
+                </div>
+              </label>
+            </div>
+
+            {/* TVBOX订阅 */}
+            <div>
+              <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
+                TVBOX订阅
+              </h4>
+              <div className='flex gap-2'>
+                <input
+                  type='text'
+                  className='flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 cursor-not-allowed'
+                  value={subscribeUrl}
+                  disabled
+                  readOnly
+                />
+                <button
+                  onClick={handleCopySubscribeUrl}
+                  className='px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white text-sm font-medium rounded-md transition-colors flex items-center gap-2'
+                >
+                  <Copy className='w-4 h-4' />
+                  {copySuccess ? '已复制' : '复制'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 底部说明 */}
+          <div className='mt-6 pt-4 border-t border-gray-200 dark:border-gray-700'>
+            <p className='text-xs text-gray-500 dark:text-gray-400 text-center'>
+              将订阅链接复制到TVBOX应用中使用
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
   // 修改密码面板内容
   const changePasswordPanel = (
     <>
@@ -1170,6 +1342,11 @@ export const UserMenu: React.FC = () => {
       {isChangePasswordOpen &&
         mounted &&
         createPortal(changePasswordPanel, document.body)}
+
+      {/* 使用 Portal 将订阅面板渲染到 document.body */}
+      {isSubscribeOpen &&
+        mounted &&
+        createPortal(subscribePanel, document.body)}
 
       {/* 版本面板 */}
       <VersionPanel

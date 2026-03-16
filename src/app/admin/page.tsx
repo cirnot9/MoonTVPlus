@@ -380,6 +380,7 @@ interface LiveDataSource {
   channelNumber?: number;
   disabled?: boolean;
   from: 'config' | 'custom';
+  proxyMode?: boolean; // 代理模式开关
 }
 
 // 自定义分类数据类型
@@ -10936,6 +10937,49 @@ const LiveSourceConfig = ({
     });
   };
 
+  const handleToggleProxyMode = (key: string) => {
+    withLoading(`toggleLiveProxyMode_${key}`, async () => {
+      // 乐观更新本地状态
+      setLiveSources((prev) =>
+        prev.map((s) =>
+          s.key === key ? { ...s, proxyMode: !s.proxyMode } : s
+        )
+      );
+
+      try {
+        const response = await fetch('/api/admin/live', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'toggle_proxy_mode',
+            key,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('切换代理模式失败');
+        }
+
+        // 成功后刷新配置
+        await refreshConfig();
+      } catch (error) {
+        // 失败时回滚本地状态
+        setLiveSources((prev) =>
+          prev.map((s) =>
+            s.key === key ? { ...s, proxyMode: !s.proxyMode } : s
+          )
+        );
+        showError(
+          error instanceof Error ? error.message : '切换代理模式失败',
+          showAlert
+        );
+        throw error;
+      }
+    }).catch(() => {
+      console.error('操作失败', 'toggle_proxy_mode', key);
+    });
+  };
+
   const handleDelete = (key: string) => {
     withLoading(`deleteLiveSource_${key}`, () =>
       callLiveSourceApi({ action: 'delete', key })
@@ -11111,6 +11155,30 @@ const LiveSourceConfig = ({
           >
             {!liveSource.disabled ? '启用中' : '已禁用'}
           </span>
+        </td>
+        <td className='px-6 py-4 whitespace-nowrap'>
+          <button
+            onClick={() => {
+              handleToggleProxyMode(liveSource.key);
+            }}
+            disabled={isLoading(`toggleLiveProxyMode_${liveSource.key}`)}
+            className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors ${
+              liveSource.proxyMode
+                ? 'bg-blue-600 dark:bg-blue-500'
+                : 'bg-gray-200 dark:bg-gray-700'
+            } ${
+              isLoading(`toggleLiveProxyMode_${liveSource.key}`)
+                ? 'opacity-50 cursor-not-allowed'
+                : 'cursor-pointer'
+            }`}
+            title={liveSource.proxyMode ? '代理模式已启用' : '代理模式已禁用'}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                liveSource.proxyMode ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
         </td>
         <td className='px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2'>
           <button
@@ -11418,6 +11486,9 @@ const LiveSourceConfig = ({
               </th>
               <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
                 状态
+              </th>
+              <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+                代理模式
               </th>
               <th className='px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
                 操作

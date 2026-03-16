@@ -53,6 +53,7 @@ interface LiveSource {
   from: 'config' | 'custom';
   channelNumber?: number;
   disabled?: boolean;
+  proxyMode?: boolean; // 代理模式开关
 }
 
 function LivePageClient() {
@@ -1344,10 +1345,10 @@ function LivePageClient() {
             (context as any).type === 'manifest' ||
             (context as any).type === 'level'
           ) {
-            // 判断是否浏览器直连
-            const isLiveDirectConnectStr = localStorage.getItem('liveDirectConnect');
-            const isLiveDirectConnect = isLiveDirectConnectStr === 'true';
-            if (isLiveDirectConnect) {
+            // 判断当前直播源是否启用代理模式
+            const currentLiveSource = currentSourceRef.current;
+            const isDirectConnect = currentLiveSource?.proxyMode === false;
+            if (isDirectConnect) {
               // 浏览器直连，使用 URL 对象处理参数
               try {
                 const url = new URL(context.url);

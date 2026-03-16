@@ -96,6 +96,7 @@ export interface AdminConfig {
     from: 'config' | 'custom';
     channelNumber?: number;
     disabled?: boolean;
+    proxyMode?: boolean; // 代理模式开关：启用后由服务器代理m3u8和ts分片
   }[];
   WebLiveConfig?: {
     key: string;

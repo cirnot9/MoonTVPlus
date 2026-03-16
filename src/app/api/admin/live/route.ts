@@ -153,6 +153,15 @@ export async function POST(request: NextRequest) {
         config.LiveConfig = sortedLiveConfig;
         break;
 
+      case 'toggle_proxy_mode':
+        // 切换代理模式
+        const toggleSource = config.LiveConfig.find((l) => l.key === key);
+        if (!toggleSource) {
+          return NextResponse.json({ error: '直播源不存在' }, { status: 404 });
+        }
+        toggleSource.proxyMode = !toggleSource.proxyMode;
+        break;
+
       default:
         return NextResponse.json({ error: '未知操作' }, { status: 400 });
     }

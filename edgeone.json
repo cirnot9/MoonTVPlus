@@ -1,0 +1,12 @@
+{
+  "$schema": "https://edgeone.ai/schema/edgeone.json",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "BUILD_TARGET=edgeone EDGEONE_PAGES=1 pnpm build",
+  "outputDirectory": ".next",
+  "nodeVersion": "24",
+  "cloudFunctions": {
+    "nodejs": {
+      "maxDuration": 120
+    }
+  }
+}
